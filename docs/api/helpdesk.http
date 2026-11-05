@@ -1,0 +1,48 @@
+@base = http://localhost:8080
+@categoryHardware = 33333333-3333-3333-3333-333333333333
+
+### Категории
+GET {{base}}/api/categories
+
+### Создать заявку
+POST {{base}}/api/tickets
+Content-Type: application/json
+
+{
+  "title": "Не печатает принтер",
+  "description": "Очередь зависла",
+  "categoryId": "{{categoryHardware}}",
+  "priority": "MEDIUM",
+  "dueAt": "2026-12-01T18:00:00Z"
+}
+
+### Карточка
+GET {{base}}/api/tickets/{{ticketId}}
+
+### Список новых
+GET {{base}}/api/tickets?status=NEW&page=0&size=20
+
+### Уточнить поля
+PATCH {{base}}/api/tickets/{{ticketId}}
+Content-Type: application/json
+
+{
+  "description": "Очередь зависла на третьем этаже",
+  "priority": "HIGH",
+  "dueAt": "2026-12-02T18:00:00Z",
+  "clearDueAt": false
+}
+
+### Взять в работу
+POST {{base}}/api/tickets/{{ticketId}}/status
+Content-Type: application/json
+
+{
+  "status": "IN_PROGRESS"
+}
+
+### Сводка за июнь 2026
+GET {{base}}/api/reports/summary?from=2026-06-01T00:00:00Z&to=2026-07-01T00:00:00Z
+
+### Готовность
+GET {{base}}/actuator/health/readiness

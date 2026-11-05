@@ -1,0 +1,88 @@
+{
+  "info": {
+    "name": "Helpdesk",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Заявки технической поддержки: создание, статус, список и сводка."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "ticketId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Категории",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/categories"
+      }
+    },
+    {
+      "name": "Создать заявку",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.collectionVariables.set('ticketId', body.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Не печатает принтер\",\n  \"description\": \"Очередь зависла\",\n  \"categoryId\": \"33333333-3333-3333-3333-333333333333\",\n  \"priority\": \"MEDIUM\",\n  \"dueAt\": \"2026-12-01T18:00:00Z\"\n}"
+        },
+        "url": "{{baseUrl}}/api/tickets"
+      }
+    },
+    {
+      "name": "Получить заявку",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/tickets/{{ticketId}}"
+      }
+    },
+    {
+      "name": "Список",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/tickets?status=NEW&page=0&size=20"
+      }
+    },
+    {
+      "name": "Изменить поля",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"description\": \"Очередь зависла на третьем этаже\",\n  \"priority\": \"HIGH\",\n  \"clearDueAt\": false\n}"
+        },
+        "url": "{{baseUrl}}/api/tickets/{{ticketId}}"
+      }
+    },
+    {
+      "name": "Сменить статус",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}"
+        },
+        "url": "{{baseUrl}}/api/tickets/{{ticketId}}/status"
+      }
+    },
+    {
+      "name": "Сводка",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/reports/summary?from=2026-06-01T00:00:00Z&to=2026-07-01T00:00:00Z"
+      }
+    }
+  ]
+}
