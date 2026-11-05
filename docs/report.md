@@ -40,6 +40,14 @@ DEF-001: проверка редактирования сначала запре
 
 Локально 5 ноября 2026: `gradlew.bat test jacocoTestReport`, 48 тестов, 0 падений. Покрытие строк 88,3%, пакеты заявок и отчёта — 95,9% и 100%. Итог записан в [test-results/summary.md](test-results/summary.md).
 
+Успешный запуск pipeline: https://github.com/DKolxoznik/helpdesk/actions/runs/42089868221
+
+Образ этого прогона: `ghcr.io/dkolxoznik/helpdesk:929dc82a4404e97ec95894b047d09f3fee243a6d`
+
+Идентификатор образа: `sha256:84ba626fd312bd32ca1d53826666698ea5e8d5abea69172acb773c5bbfd2ee25`
+
+На стенде smoke-проверка создала заявку, запрещённый переход вернул ошибку, сводка ответила `createdCount` 5 и `averageResolutionSeconds` 190800.
+
 ## Ограничения
 
 - Нет аутентификации и разделения ролей. Это было за границей задания.
