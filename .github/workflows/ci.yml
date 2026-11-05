@@ -1,0 +1,96 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Проверка и тесты
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Форматирование Java и Kotlin
+        run: ./gradlew --no-daemon spotlessCheck
+      - name: Сборка и тесты
+        run: ./gradlew --no-daemon test jacocoTestReport bootJar
+      - name: Отчёты тестов и покрытия
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ github.sha }}
+          path: |
+            build/reports/tests/test
+            build/reports/jacoco/test
+          if-no-files-found: warn
+
+  image:
+    name: Публикация образа
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        shell: bash
+        run: |
+          owner=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          echo "owner=${owner}" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${owner}/helpdesk:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ghcr.io/${{ steps.meta.outputs.owner }}/helpdesk:main
+
+  deploy:
+    name: Стенд
+    needs: image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Запуск опубликованного образа
+        env:
+          HELPDESK_IMAGE: ${{ needs.image.outputs.image }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        run: docker compose up -d --wait --no-build
+      - name: Проверка после развёртывания
+        run: bash scripts/smoke.sh
+      - name: Идентификатор образа
+        env:
+          HELPDESK_IMAGE: ${{ needs.image.outputs.image }}
+        run: docker image inspect "$HELPDESK_IMAGE" --format '{{.Id}}'
+      - name: Остановка стенда
+        if: always()
+        run: docker compose down -v
